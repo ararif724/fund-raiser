@@ -25,7 +25,7 @@ export const PATCH = async (req: Request) => {
     const getType = url.searchParams.get('type');
     const id = url.searchParams.get('id');
 
-    const passKey = process.env.PASS_KEY;
+    const passKey = 'syed0amir1ali'; // process.env.NEXT_PASS_KEY;
 
     if (passKey !== getPassKey) {
         return NextResponse.json(
