@@ -1,9 +1,26 @@
+/* eslint-disable no-var */
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { writeFile } from 'fs/promises';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
-const prisma = new PrismaClient();
+import { DefaultArgs } from '@prisma/client/runtime/library';
+// const prisma = new PrismaClient();
+
+declare global {
+    var prisma: PrismaClient | undefined; // Allow it to be undefined initially
+}
+
+let prisma: PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>;
+
+if (process.env.NODE_ENV === 'production') {
+    prisma = new PrismaClient();
+} else {
+    if (!global.prisma) {
+        global.prisma = new PrismaClient();
+    }
+    prisma = global.prisma;
+}
 
 export const GET = async () => {
     try {
