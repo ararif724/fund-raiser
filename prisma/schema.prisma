@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./database/fund_raiser.sqlite" //env("DATABASE_URL")
+  url      = "file:./database/fund_raiser.sqlite" // Uncomment and use `env("DATABASE_URL")` for production
 }
 
 model Funder {
@@ -20,16 +20,17 @@ model Funder {
   registration    Int?
   transactionId   String
   account         String
-  amount          Decimal
-  currency        String   @default(dbgenerated("BDT"))
+  amount          Int // Stores high precision amounts as text in SQLite
+  currency        String   @default("BDT") // Using @default here instead of dbgenerated
   comment         String?
   email           String?
   phone           String?
   profileImage    String?
   paymentRefImage String?
   accountType     String
-  password        String? // for storing the hashed password
-  isVerified      Boolean? @default(false) // for storing the hashed password
+  password        String?  // Store hashed password here
+  isVerified      Boolean? @default(false) // Indicates if the account is verified
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
