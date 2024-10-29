@@ -19,3 +19,8 @@ export default function info(...args: unknown[]) {
 
     return null;
 }
+
+export function asset(endpoint = '', prefix = '/') {
+    const url: string = process.env?.NEXT_PUBLIC_ASSET_URL || '/';
+    return url + prefix + endpoint;
+}

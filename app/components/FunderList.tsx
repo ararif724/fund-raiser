@@ -1,6 +1,6 @@
 'use client';
 import { useGetFundersQuery } from '@/redux/api/apiSlice';
-import info from '@/hooks/info';
+import info, { asset } from '@/hooks/info';
 import Image from 'next/image';
 import Loading from './Loading';
 import React, { useEffect, useState } from 'react';
@@ -18,8 +18,8 @@ export interface FunderProps {
     password: string;
     comment: string;
     accountType: string;
-    profileImage: File | null | string;
-    paymentRefImage: File | null | string;
+    profileImage: string;
+    paymentRefImage: string;
     createdAt: null | string;
     updatedAt: null | string;
     currency: null | string;
@@ -75,8 +75,6 @@ export const FunderLists: React.FC<{
     const { isError, isLoading, error, data } = useGetFundersQuery(undefined);
     info(true, 'useGetFundersQuery', { isError, isLoading, error, data });
 
-    // async function statusChangeHandler(funder: FunderProps) {}
-
     if (isLoading) return <Loading />;
     if (isError) return 'Error!';
 
@@ -86,7 +84,18 @@ export const FunderLists: React.FC<{
                 <h1 className="text-2xl font-li-ador-bold text-secondary border-b border-dashed border-secondary pb-2 mb-6">
                     ফান্ডকারীদের তালিকা
                 </h1>
-                {!isAdmin && (
+                {isAdmin ? (
+                    <a
+                        href={asset(
+                            'api/funder/funder-download-developed-by-syedamirali'
+                        )}
+                        target="_blank"
+                        id="handler"
+                        className="font-li-ador-bold bg-secondary px-4 py-1 text-lg text-white hover:bg-primary rounded-md duration-500 hover:tracking-wide"
+                    >
+                        ফান্ডকারীদের তালিকা ডাউনলোড করুন
+                    </a>
+                ) : (
                     <button
                         id="handler"
                         className="font-li-ador-bold bg-primary px-4 py-1 text-lg text-white rounded-md duration-500 hover:tracking-wide"
@@ -168,7 +177,7 @@ const FunderItem: React.FC<{
             <td className="border-t border-gray-200 px-4 py-2 text-center">
                 {funder.profileImage ? (
                     <Image
-                        src={`/${funder.profileImage}`}
+                        src={asset(funder.profileImage || '')}
                         alt={`${funder.name}'s profile`}
                         width={40}
                         height={40}

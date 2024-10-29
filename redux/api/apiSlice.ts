@@ -10,7 +10,7 @@ import {
 } from '@reduxjs/toolkit/query/react';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: '/api', // process.env?.NEXT_PUBLIC_API_URL || '/', // Use env variable in Next.js
+    baseUrl: process.env?.NEXT_PUBLIC_API_URL, // || '/', // Use env variable in Next.js'/api',
     prepareHeaders: (headers) => {
         const token = window.localStorage.getItem('token'); // Example: JWT token
         if (token) {
@@ -65,7 +65,8 @@ const apiSlice = createApi({
         }),
         changeVerifyStatus: builder.mutation({
             query: ({ id, passKey, type }) => ({
-                url: `/funder?id=${id}&pass-key=${passKey}&type=${type}`,
+                // url: `/funder?id=${id}&pass-key=${passKey}&type=${type}`,
+                url: `/funder/${id}?pass-key=${passKey}&type=${type}`,
                 method: 'PATCH',
             }),
 
@@ -75,8 +76,6 @@ const apiSlice = createApi({
                     const { data } = await queryFulfilled;
                     info(true, 'apiSlice - changeVerifyStatus', { data, body });
 
-                    // Here, you can update the state by refetching the relevant query
-                    // For example, if there's a `getFunders` query, you can trigger a cache update
                     dispatch(
                         apiSlice.util.updateQueryData(
                             'getFunders',

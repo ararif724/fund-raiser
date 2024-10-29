@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useStoreFunderMutation } from '@/redux/api/apiSlice';
 import info from '@/hooks/info';
 import Loading from './Loading';
+import { MakeAlert } from '@/hooks/ClientUtility';
 
 export interface FunderProps {
     id: number;
@@ -124,6 +125,12 @@ const AddForm: React.FC = () => {
                     (error.data as { message: string }).message && (
                         <p className="font-li-ador text-lg leading-[1.3] text-center text-red-500 pb-4">
                             {(error.data as { message: string }).message}
+                            <MakeAlert
+                                state={isError}
+                                message={
+                                    (error.data as { message: string }).message
+                                }
+                            />
                         </p>
                     )}
 
