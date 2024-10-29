@@ -13,17 +13,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             Int       @id @default(autoincrement())
-  name           String?
-  roll           Int
-  registration   Int?
-  transactionId  String
-  amount         Decimal    
-  currency       String     @default(dbgenerated("BDT"))
-  comment        String?
-  email          String?
-  password       String? // for storing the hashed password
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+model Funder {
+  id              Int      @id @default(autoincrement())
+  name            String?
+  roll            Int
+  registration    Int?
+  transactionId   String
+  account         String
+  amount          Decimal
+  currency        String   @default(dbgenerated("BDT"))
+  comment         String?
+  email           String?
+  phone           String?
+  profileImage    String?
+  paymentRefImage String?
+  accountType     String
+  password        String? // for storing the hashed password
+  isVerified      Boolean? @default(false) // for storing the hashed password
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

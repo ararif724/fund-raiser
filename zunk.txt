@@ -1,0 +1,508 @@
+import { NextRequest, NextResponse } from 'next/server';
+import formidable from 'formidable';
+import fs from 'fs';
+import path from 'path';
+import { PrismaClient } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
+import bcrypt from 'bcrypt';
+import { IncomingMessage } from 'http';
+
+const prisma = new PrismaClient();
+
+// Disable the default body parser for API routes
+export const config = {
+    api: {
+        bodyParser: false,
+    },
+};
+
+export async function POST(req: NextRequest) {
+    const form = new formidable.IncomingForm();
+
+    // Set the upload directory
+    const uploadDir = path.join(process.cwd(), 'public/uploads/');
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true }); // Create directory if it doesn't exist
+    }
+
+    form.uploadDir = uploadDir; // Set the upload directory
+    form.keepExtensions = true; // Keep file extensions
+
+    // Wrap the form parsing in a promise
+    return new Promise((resolve, reject) => {
+        // Use the raw request object
+        form.parse(
+            req as unknown as IncomingMessage,
+            async (err, fields, files) => {
+                if (err) {
+                    console.error('Error parsing form:', err);
+                    return reject(
+                        NextResponse.json(
+                            { message: 'Error processing data' },
+                            { status: 500 }
+                        )
+                    );
+                }
+
+                // Extract fields and files
+                const {
+                    name,
+                    roll,
+                    registration,
+                    transactionId,
+                    account,
+                    amount,
+                    comment,
+                    email,
+                    phone,
+                    accountType,
+                    password,
+                } = fields;
+                const profileImage = files.profileImage;
+                const paymentRefImage = files.paymentRefImage;
+
+                let profileImagePath = null;
+                let paymentRefImagePath = null;
+
+                // Save profile image with a random name
+                if (profileImage) {
+                    const randomProfileImageName = `${uuidv4()}.png`;
+                    const oldProfileImagePath = profileImage.filepath; // Get the original file path
+                    profileImagePath = path.join(
+                        'uploads',
+                        randomProfileImageName
+                    ); // Set new path
+                    const newProfileImagePath = path.join(
+                        uploadDir,
+                        randomProfileImageName
+                    ); // Full path
+                    fs.renameSync(oldProfileImagePath, newProfileImagePath); // Move file
+                }
+
+                // Save payment reference image with a random name
+                if (paymentRefImage) {
+                    const randomPaymentRefImageName = `${uuidv4()}.png`;
+                    const oldPaymentRefImagePath = paymentRefImage.filepath; // Get the original file path
+                    paymentRefImagePath = path.join(
+                        'uploads',
+                        randomPaymentRefImageName
+                    ); // Set new path
+                    const newPaymentRefImagePath = path.join(
+                        uploadDir,
+                        randomPaymentRefImageName
+                    ); // Full path
+                    fs.renameSync(
+                        oldPaymentRefImagePath,
+                        newPaymentRefImagePath
+                    ); // Move file
+                }
+
+                // Hash the password
+                const hashedPassword = await bcrypt.hash(password, 10);
+
+                // Create a new user in the database
+                try {
+                    const user = await prisma.funder.create({
+                        data: {
+                            name,
+                            roll: parseInt(roll as string),
+                            registration: registration
+                                ? parseInt(registration as string)
+                                : null,
+                            transactionId,
+                            account,
+                            amount: parseFloat(amount as string),
+                            comment,
+                            email,
+                            phone,
+                            profileImage: profileImagePath,
+                            paymentRefImage: paymentRefImagePath,
+                            accountType,
+                            password: hashedPassword,
+                        },
+                    });
+
+                    return resolve(
+                        NextResponse.json(
+                            { message: 'User created successfully', user },
+                            { status: 201 }
+                        )
+                    );
+                } catch (dbError) {
+                    console.error('Database error:', dbError);
+                    return reject(
+                        NextResponse.json(
+                            { message: 'Error creating user' },
+                            { status: 500 }
+                        )
+                    );
+                }
+            }
+        );
+    });
+}
+
+// // app/api/funder/route.ts
+
+// import { NextRequest, NextResponse } from 'next/server';
+// import { IncomingForm } from 'formidable';
+// import fs from 'fs';
+// import path from 'path';
+// import { PrismaClient } from '@prisma/client';
+// import { v4 as uuidv4 } from 'uuid'; // For generating random names
+
+// const prisma = new PrismaClient();
+
+// export const config = {
+//     api: {
+//         bodyParser: false, // Disable the default body parser
+//     },
+// };
+
+// export async function POST(req: NextRequest) {
+//     const form = new IncomingForm();
+
+//     // Set upload directory
+//     const uploadDir = path.join(process.cwd(), 'public/uploads');
+//     if (!fs.existsSync(uploadDir)) {
+//         fs.mkdirSync(uploadDir, { recursive: true }); // Create directory if it doesn't exist
+//     }
+
+//     form.uploadDir = uploadDir;
+//     form.keepExtensions = true;
+
+//     // Parse the incoming form data
+//     return new Promise((resolve, reject) => {
+//         form.parse(
+//             req,
+//             async (
+//                 err: any,
+//                 fields: {
+//                     name: any;
+//                     roll: any;
+//                     registration: any;
+//                     transactionId: any;
+//                     account: any;
+//                     amount: any;
+//                     comment: any;
+//                     email: any;
+//                     phone: any;
+//                     accountType: any;
+//                     password: any;
+//                 },
+//                 files: { profileImage: any; paymentRefImage: any }
+//             ) => {
+//                 if (err) {
+//                     console.error('Error parsing form:', err);
+//                     return reject(
+//                         NextResponse.json(
+//                             { message: 'Error processing data' },
+//                             { status: 500 }
+//                         )
+//                     );
+//                 }
+
+//                 // Extract fields and files
+//                 const {
+//                     name,
+//                     roll,
+//                     registration,
+//                     transactionId,
+//                     account,
+//                     amount,
+//                     comment,
+//                     email,
+//                     phone,
+//                     accountType,
+//                     password,
+//                 } = fields;
+//                 const profileImage = files.profileImage; // Assuming the input name is 'profileImage'
+//                 const paymentRefImage = files.paymentRefImage; // Assuming the input name is 'paymentRefImage'
+
+//                 let profileImagePath = null;
+//                 let paymentRefImagePath = null;
+
+//                 // Save profile image with a random name
+//                 if (profileImage) {
+//                     const randomProfileImageName = `${uuidv4()}.png`; // Generate random filename
+//                     const oldProfileImagePath = profileImage.filepath;
+//                     profileImagePath = path.join(
+//                         'uploads',
+//                         randomProfileImageName
+//                     );
+//                     const newProfileImagePath = path.join(
+//                         uploadDir,
+//                         randomProfileImageName
+//                     );
+//                     fs.renameSync(oldProfileImagePath, newProfileImagePath); // Move the file
+//                 }
+
+//                 // Save payment reference image with a random name
+//                 if (paymentRefImage) {
+//                     const randomPaymentRefImageName = `${uuidv4()}.png`; // Generate random filename
+//                     const oldPaymentRefImagePath = paymentRefImage.filepath;
+//                     paymentRefImagePath = path.join(
+//                         'uploads',
+//                         randomPaymentRefImageName
+//                     );
+//                     const newPaymentRefImagePath = path.join(
+//                         uploadDir,
+//                         randomPaymentRefImageName
+//                     );
+//                     fs.renameSync(
+//                         oldPaymentRefImagePath,
+//                         newPaymentRefImagePath
+//                     ); // Move the file
+//                 }
+
+//                 // Create a new user in the database
+//                 try {
+//                     const user = await prisma.funder.create({
+//                         data: {
+//                             name,
+//                             roll: parseInt(roll as string),
+//                             registration: registration
+//                                 ? parseInt(registration as string)
+//                                 : null,
+//                             transactionId,
+//                             account,
+//                             amount: parseFloat(amount as string),
+//                             comment,
+//                             email,
+//                             phone,
+//                             profileImage: profileImagePath,
+//                             paymentRefImage: paymentRefImagePath,
+//                             accountType,
+//                             password, // Ensure you hash the password before saving it
+//                         },
+//                     });
+
+//                     return resolve(
+//                         NextResponse.json(
+//                             { message: 'User created successfully', user },
+//                             { status: 201 }
+//                         )
+//                     );
+//                 } catch (dbError) {
+//                     console.error('Database error:', dbError);
+//                     return reject(
+//                         NextResponse.json(
+//                             { message: 'Error creating user' },
+//                             { status: 500 }
+//                         )
+//                     );
+//                 }
+//             }
+//         );
+//     });
+// }
+
+// // app/api/funder/route.ts
+
+// import { NextRequest, NextResponse } from 'next/server';
+// import formidable from 'formidable';
+// import fs from 'fs';
+// import path from 'path';
+
+// export const config = {
+//     api: {
+//         bodyParser: false, // Disable the default body parser
+//     },
+// };
+
+// export async function POST(req: NextRequest) {
+//     const form = new formidable.IncomingForm();
+
+//     form.uploadDir = path.join(process.cwd(), 'public/uploads'); // Set the upload directory
+//     form.keepExtensions = true; // Keep file extensions
+
+//     // Parse the incoming form data
+//     return new Promise((resolve, reject) => {
+//         form.parse(
+//             req,
+//             async (
+//                 err: any,
+//                 fields: any,
+//                 files: { profileImage: any; paymentRefImage: any }
+//             ) => {
+//                 if (err) {
+//                     console.error('Error parsing form:', err);
+//                     return reject(
+//                         NextResponse.json(
+//                             { message: 'Error processing data' },
+//                             { status: 500 }
+//                         )
+//                     );
+//                 }
+
+//                 // Here you can access the uploaded files and other fields
+//                 const profileImage = files.profileImage; // Assuming the input name is 'profileImage'
+//                 const paymentRefImage = files.paymentRefImage; // Assuming the input name is 'paymentRefImage'
+
+//                 // Move files to the public/uploads directory
+//                 if (profileImage) {
+//                     const oldPath = profileImage.filepath;
+//                     const newPath = path.join(
+//                         form.uploadDir,
+//                         profileImage.originalFilename
+//                     );
+//                     fs.renameSync(oldPath, newPath); // Move the file
+//                 }
+
+//                 if (paymentRefImage) {
+//                     const oldPath = paymentRefImage.filepath;
+//                     const newPath = path.join(
+//                         form.uploadDir,
+//                         paymentRefImage.originalFilename
+//                     );
+//                     fs.renameSync(oldPath, newPath); // Move the file
+//                 }
+
+//                 // Here you can also handle database insertion logic if needed
+//                 return resolve(
+//                     NextResponse.json(
+//                         {
+//                             message: 'Files uploaded successfully',
+//                             fields,
+//                             files,
+//                         },
+//                         { status: 200 }
+//                     )
+//                 );
+//             }
+//         );
+//     });
+// }
+
+// export async function GET(req: NextRequest) {
+//     // Handle POST requests
+//     return NextResponse.json({ message: 'Data received' }, { status: 200 });
+// }
+
+// // import type { NextApiRequest, NextApiResponse } from 'next';
+
+// // import { NextRequest, NextResponse } from 'next/server';
+
+// // // Define the POST handler
+// // export async function POST(req: NextRequest) {
+// //     try {
+// //         const data = req.body;
+
+// //         return NextResponse.json(
+// //             { message: 'Data received', data },
+// //             { status: 200 }
+// //         );
+// //     } catch (error) {
+// //         console.error('Error processing data:', error);
+// //         return NextResponse.json(
+// //             { message: 'Error processing data' },
+// //             { status: 500 }
+// //         );
+// //     }
+// // }
+
+// // type ResponseData = {
+// //     message: string;
+// // };
+
+// // export default function handler(
+// //     req: NextApiRequest,
+// //     res: NextApiResponse<ResponseData>
+// // ) {
+// //     res.status(200).json({ message: 'Hello from Next.js!' });
+// // }
+
+// // app/api/funder/route.ts
+
+// // You can also define other HTTP methods (GET, PUT, DELETE) if needed
+
+// // export default async function handler(
+// //     request: NextApiRequest,
+// //     response: NextApiResponse
+// // ) {
+// //     return response.send('hello');
+// //     switch (request.method) {
+// //         case 'POST':
+// //         default:
+// //             return response.status(200).json({
+// //                 method: request.method,
+// //                 body: request.body,
+// //             });
+// //     }
+// // }
+
+// // export default async function handler(
+// //     req: NextApiRequest,
+// //     res: NextApiResponse
+// // ) {
+// //     if (req.method === 'POST') {
+// //         // Extract form data from the request body
+// //         const formData = req.body;
+
+// //         // Process or store the data here (e.g., in a database)
+// //         // For now, respond with a success message and received data
+// //         res.status(200).json({ message: 'Form data received', data: formData });
+// //     } else {
+// //         // Handle unsupported methods
+// //         res.setHeader('Allow', ['POST']);
+// //         res.status(405).end(`Method ${req.method} Not Allowed`);
+// //     }
+// // }
+
+
+        // Create a FormData object to handle files properly
+        // const formData = new FormData();
+        // Object.keys(form).forEach((key) => {
+        //     const value = (form as any)[key];
+        //     // Append either the file or the string value to FormData
+        //     formData.append(key, value instanceof File ? value : String(value));
+        // });
+        //   formData.append("sameAccount", form.sameAccount);
+
+        /* try {
+            const response = await fetch('/api/funder', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+            console.log('Server response:', result);
+        } catch (error) {
+            console.error('Failed to submit form:', error);
+        } */
+
+    /* const [funders, setFunders] = useState<{
+        isLoading: boolean;
+        isError: boolean;
+        error: undefined | object;
+        data: FunderProps[];
+        isSuccess: boolean;
+    }>({
+        isLoading: false,
+        isError: false,
+        error: undefined,
+        data: [],
+        isSuccess: false,
+    }); */
+
+// const funder: FunderProps = {
+//     id: 1,
+//     name: 'Syed Amir Ali',
+//     roll: 230655,
+//     registration: null,
+//     transactionId: '12',
+//     account: '12',
+//     amount: '200',
+//     currency: 'BDT',
+//     comment: '',
+//     email: 'amirralli300400@gmail.com',
+//     phone: '2',
+//     profileImage: 'bkash.svg',
+//     paymentRefImage: 'nagad.svg',
+//     accountType: 'bkash',
+//     password: '01817807594',
+//     createdAt: '2024-10-29T08:09:02.456Z',
+//     updatedAt: '2024-10-29T08:09:02.481Z',
+//     isVerified:1
+// };
+
+const FunderItem:React.FC<FunderProps& {isAdmin:boolean ,statusChangeHandler:()=>void|null}> = ({id, profileImage,name,amount,roll,isAdmin,statusChangeHandler,transactionId,isVerified}) => {
