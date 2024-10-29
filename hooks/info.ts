@@ -21,6 +21,6 @@ export default function info(...args: unknown[]) {
 }
 
 export function asset(endpoint = '', prefix = '/') {
-    const url: string = process.env?.NEXT_PUBLIC_ASSET_URL || '/';
+    const url: string = process.env.NEXT_PUBLIC_ASSET_URL || '/';
     return url + prefix + endpoint;
 }

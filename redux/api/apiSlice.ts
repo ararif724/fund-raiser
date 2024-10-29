@@ -10,7 +10,7 @@ import {
 } from '@reduxjs/toolkit/query/react';
 
 const baseQuery = fetchBaseQuery({
-    baseUrl: process.env?.NEXT_PUBLIC_API_URL, // || '/', // Use env variable in Next.js'/api',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL, // || '/', // Use env variable in Next.js'/api',
     prepareHeaders: (headers) => {
         const token = window.localStorage.getItem('token'); // Example: JWT token
         if (token) {
