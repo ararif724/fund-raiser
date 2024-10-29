@@ -39,7 +39,7 @@ const apiSlice = createApi({
     ) => ({
         getFunders: builder.query({ query: () => '/funder' }),
         storeFunder: builder.mutation({
-            query: (body) => ({ url: '/funder/', method: 'POST', body }),
+            query: (body) => ({ url: '/funder', method: 'POST', body }),
 
             async onQueryStarted(body, { dispatch, queryFulfilled }) {
                 try {
